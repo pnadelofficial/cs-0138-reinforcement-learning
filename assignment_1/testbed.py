@@ -1,6 +1,8 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from functools import partial
+import argparse
 
 class TestBed:
     def __init__(self, k=10, runs=2000, increment_fnc=partial(np.random.normal, 0, 0.01), stationary=True):
@@ -51,7 +53,13 @@ class TestBed:
             all_run_optimal.append(run_optimal)
         
         self.average_rewards = np.mean(all_run_rewards, axis=0)
+        label = "Stationary" if self.stationary else "Non-stationary"
+        pd.DataFrame({"steps":range(len(self.average_rewards)), "rewards":self.average_rewards}).to_csv(f"{label}_{self.increment_fnc.func.__name__}_rewards.csv")
+        print(f"Saved {label}_{self.increment_fnc.func.__name__}_rewards.csv")
+
         self.percent_optimal = np.mean(all_run_optimal, axis=0) * 100
+        pd.DataFrame({"steps":range(len(self.percent_optimal)), "rewards":self.percent_optimal}).to_csv(f"{label}_{self.increment_fnc.func.__name__}_optimal.csv")
+        print(f"Saved {label}_{self.increment_fnc.func.__name__}_optimal.csv")
 
     def plot_rewards(self):
         label = "Stationary" if self.stationary else "Non-stationary"
@@ -68,6 +76,7 @@ class TestBed:
         plt.xlabel("Steps")
         plt.ylabel("Percent optimal")
         plt.legend()
+        plt.show()
 
 class StationaryLearner:
     def __init__(self, k=10, eps=0.1):
@@ -121,37 +130,43 @@ class NonStationaryLearner:
         return q
 
 def main():
-    stat_testbed_normal = TestBed(stationary=True)
-    non_stat_testbed_normal = TestBed(stationary=False)
-    stat_testbed_lognormal = TestBed(increment_fnc=partial(np.random.lognormal, 0, 0.01), stationary=True)
-    non_stat_testbed_lognormal = TestBed(increment_fnc=partial(np.random.lognormal, 0, 0.01), stationary=False)
-    stat_testbed_exp = TestBed(increment_fnc=partial(np.random.exponential, 0.01), stationary=True)
-    non_stat_testbed_exp = TestBed(increment_fnc=partial(np.random.exponential, 0.01), stationary=False)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-s", "--stationary", action="store_true")
+    parser.add_argument("-t", "--nonstationary", action="store_true")
+    parser.add_argument("-n", "--normal", action="store_true")
+    parser.add_argument("-l", "--lognormal", action="store_true")
+    parser.add_argument("-e", "--exponential", action="store_true")
+    args = parser.parse_args()
 
-    stat_testbed_normal.evaluate_testbed()
-    non_stat_testbed_normal.evaluate_testbed()
-    stat_testbed_lognormal.evaluate_testbed()
-    non_stat_testbed_lognormal.evaluate_testbed()
-    stat_testbed_exp.evaluate_testbed()
-    non_stat_testbed_exp.evaluate_testbed()
+    tbs = []
+    if (args.stationary) and (args.normal):
+        print("Running Stationary - Normal")
+        stat_testbed_normal = TestBed(stationary=True)
+        tbs.append(stat_testbed_normal)
+    if (args.stationary) and (args.lognormal):
+        print("Running Stationary - Lognormal")
+        stat_testbed_lognormal = TestBed(increment_fnc=partial(np.random.lognormal, 0, 0.01), stationary=True)
+        tbs.append(stat_testbed_lognormal)
+    if (args.stationary) and (args.exponential):
+        print("Running Stationary - Exponential")
+        stat_testbed_exp = TestBed(increment_fnc=partial(np.random.exponential, 0.01), stationary=True)
+        tbs.append(stat_testbed_exp)
 
-    stat_testbed_normal.plot_rewards()
-    non_stat_testbed_normal.plot_rewards()
+    if (args.nonstationary) and (args.normal):
+        print("Running Non-stationary - Normal")
+        nonstat_testbed_normal = TestBed(stationary=False)
+        tbs.append(nonstat_testbed_normal)
+    if (args.stationary) and (args.lognormal):
+        print("Running Non-stationary - Lognormal")
+        nonstat_testbed_lognormal = TestBed(increment_fnc=partial(np.random.lognormal, 0, 0.01), stationary=False)
+        tbs.append(nonstat_testbed_lognormal)
+    if (args.stationary) and (args.exponential):
+        print("Running Non-stationary - Exponential")
+        nonstat_testbed_exp = TestBed(increment_fnc=partial(np.random.exponential, 0.01), stationary=False)
+        tbs.append(nonstat_testbed_exp)
 
-    stat_testbed_normal.plot_optimal()
-    non_stat_testbed_normal.plot_optimal()
-
-    stat_testbed_lognormal.plot_rewards()
-    non_stat_testbed_lognormal.plot_rewards()
-
-    stat_testbed_lognormal.plot_optimal()
-    non_stat_testbed_lognormal.plot_optimal()
-
-    stat_testbed_exp.plot_rewards()
-    non_stat_testbed_exp.plot_rewards()
-
-    stat_testbed_exp.plot_optimal()
-    non_stat_testbed_exp.plot_optimal()
+    for tb in tbs:
+        tb.evaluate_testbed()
 
 if __name__ == "__main__":
     main()
