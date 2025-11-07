@@ -245,7 +245,7 @@ class MonteCarloSimulation:
         pos_map +=  self.track.course
 
         self.noise = prev_noise
-        self.epsilon - prev_eps
+        self.epsilon = prev_eps
         return np.flip(pos_map, axis=1)
     
     def plot_episode_lengths(self, label, window=100):
